@@ -68,6 +68,7 @@ func main() {
 	codexSettings := services.NewCodexSettingsService(providerRelay.Addr())
 	logService := services.NewLogService()
 	appSettings := services.NewAppSettingsService()
+	mcpService := services.NewMCPService()
 	versionService := NewVersionService()
 
 	go func() {
@@ -93,6 +94,7 @@ func main() {
 			application.NewService(codexSettings),
 			application.NewService(logService),
 			application.NewService(appSettings),
+			application.NewService(mcpService),
 			application.NewService(versionService),
 		},
 		Assets: application.AssetOptions{

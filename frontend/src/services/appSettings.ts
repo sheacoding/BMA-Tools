@@ -2,10 +2,12 @@ import { Call } from '@wailsio/runtime'
 
 export type AppSettings = {
   show_heatmap: boolean
+  show_home_title: boolean
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   show_heatmap: true,
+  show_home_title: true,
 }
 
 export const fetchAppSettings = async (): Promise<AppSettings> => {

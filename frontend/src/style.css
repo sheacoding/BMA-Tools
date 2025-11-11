@@ -74,6 +74,31 @@ body {
   width: 100%;
 }
 
+.base-input,
+.base-textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--mac-border);
+  background: color-mix(in srgb, var(--mac-surface) 50%, transparent);
+  padding: 0.75rem 1rem;
+  font: inherit;
+  color: var(--mac-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.base-input:focus,
+.base-textarea:focus {
+  outline: none;
+  border-color: var(--mac-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mac-accent) 25%, transparent);
+  background: var(--mac-surface);
+}
+
+.base-textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
 
 .mac-sidebar-subtitle {
   font-size: 0.85rem;
@@ -507,6 +532,11 @@ html.dark .mac-sidebar-item:hover {
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
+  margin-left: auto;
+}
+
+.section-header.section-header-solo {
+  justify-content: flex-end;
 }
 
 .main-shell {
@@ -529,6 +559,8 @@ html.dark .mac-sidebar-item:hover {
   gap: 10px;
   box-sizing: border-box;
 }
+
+/* general-shell inherits padding via .general-page */
 
 .github-icon.github-upgrade {
   color: #0ea5e9;
@@ -1048,10 +1080,17 @@ html.dark .card-meta {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: background 0.2s ease;
+}
+
+.ghost-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 html.dark .ghost-icon {
@@ -1355,21 +1394,18 @@ html.dark .ghost-icon:hover {
   width: 100%;
 }
 .general-page {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 32px clamp(24px, 6vw, 48px);
+  width: 100%;
+  margin: 0;
+  padding: 32px 48px 48px;
   display: flex;
   flex-direction: column;
   gap: 32px;
 }
 
-.general-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.general-page section {
+  width: 100%;
 }
 
-.general-header h1 {
-  font-size: 1.6rem;
-  margin: 0;
+.general-page .mac-panel {
+  width: 100%;
 }

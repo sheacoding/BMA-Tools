@@ -13,7 +13,8 @@ const (
 )
 
 type AppSettings struct {
-	ShowHeatmap bool `json:"show_heatmap"`
+	ShowHeatmap   bool `json:"show_heatmap"`
+	ShowHomeTitle bool `json:"show_home_title"`
 }
 
 type AppSettingsService struct {
@@ -31,7 +32,10 @@ func NewAppSettingsService() *AppSettingsService {
 }
 
 func (as *AppSettingsService) defaultSettings() AppSettings {
-	return AppSettings{ShowHeatmap: true}
+	return AppSettings{
+		ShowHeatmap:   true,
+		ShowHomeTitle: true,
+	}
 }
 
 // GetAppSettings returns the persisted app settings or defaults if the file does not exist.

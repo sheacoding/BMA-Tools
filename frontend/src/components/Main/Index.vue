@@ -63,7 +63,7 @@
     </div>
     <div class="contrib-page">
       <section class="contrib-hero">
-        <h1>{{ t('components.main.hero.title') }}</h1>
+        <h1 v-if="showHomeTitle">{{ t('components.main.hero.title') }}</h1>
         <!-- <p class="lead">
           {{ t('components.main.hero.lead') }}
         </p> -->
@@ -145,6 +145,9 @@
               <span class="relay-tooltip-content">{{ currentProxyLabel }} · {{ t('components.main.relayToggle.tooltip') }}</span>
             </div>
           </div>
+          <button class="ghost-icon" :aria-label="t('components.main.controls.mcp')" @click="goToMcp">
+            <span class="icon-svg" v-html="mcpIcon" aria-hidden="true"></span>
+          </button>
           <button class="ghost-icon" :aria-label="t('components.main.logs.view')" @click="goToLogs">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -435,6 +438,8 @@ const providerStatsLoading = reactive<Record<ProviderTab, boolean>>({
 let providerStatsTimer: number | undefined
 let updateTimer: number | undefined
 const showHeatmap = ref(true)
+const showHomeTitle = ref(true)
+const mcpIcon = lobeIcons['mcp'] ?? ''
 const appVersion = ref('')
 const hasUpdateAvailable = ref(false)
 
@@ -554,9 +559,11 @@ const loadAppSettings = async () => {
   try {
     const data: AppSettings = await fetchAppSettings()
     showHeatmap.value = data?.show_heatmap ?? true
+    showHomeTitle.value = data?.show_home_title ?? true
   } catch (error) {
     console.error('failed to load app settings', error)
     showHeatmap.value = true
+    showHomeTitle.value = true
   }
 }
 
@@ -812,6 +819,10 @@ const activeProxyBusy = computed(() => proxyBusy[activeTab.value])
 
 const goToLogs = () => {
   router.push('/logs')
+}
+
+const goToMcp = () => {
+  router.push('/mcp')
 }
 
 const goToSettings = () => {

@@ -13,6 +13,17 @@ export type AutomationCard = {
 export const automationCardGroups: Record<'claude' | 'codex', AutomationCard[]> = {
   claude: [
     {
+      id: 100,
+      name: '0011',
+      apiUrl: 'https://0011.ai',
+      apiKey: '',
+      officialSite: 'https://0011.ai',
+      icon: 'aicoding',
+      tint: 'rgba(10, 132, 255, 0.14)',
+      accent: '#0aff5cff',
+      enabled: false,
+    },
+    {
       id: 101,
       name: 'AICoding.sh',
       apiUrl: 'https://api.aicoding.sh',

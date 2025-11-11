@@ -8,6 +8,7 @@ import { fetchAppSettings, saveAppSettings, type AppSettings } from '../../servi
 
 const router = useRouter()
 const heatmapEnabled = ref(true)
+const homeTitleVisible = ref(true)
 const settingsLoading = ref(true)
 const saveBusy = ref(false)
 
@@ -20,9 +21,11 @@ const loadAppSettings = async () => {
   try {
     const data = await fetchAppSettings()
     heatmapEnabled.value = data?.show_heatmap ?? true
+    homeTitleVisible.value = data?.show_home_title ?? true
   } catch (error) {
     console.error('failed to load app settings', error)
     heatmapEnabled.value = true
+    homeTitleVisible.value = true
   } finally {
     settingsLoading.value = false
   }
@@ -32,7 +35,10 @@ const persistAppSettings = async () => {
   if (settingsLoading.value || saveBusy.value) return
   saveBusy.value = true
   try {
-    const payload: AppSettings = { show_heatmap: heatmapEnabled.value }
+    const payload: AppSettings = {
+      show_heatmap: heatmapEnabled.value,
+      show_home_title: homeTitleVisible.value,
+    }
     await saveAppSettings(payload)
     window.dispatchEvent(new CustomEvent('app-settings-updated'))
   } catch (error) {
@@ -48,9 +54,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="general-page">
-    <header class="general-header">
-      <button class="ghost-icon" @click="goBack">
+  <div class="main-shell general-shell">
+    <div class="global-actions">
+      <p class="global-eyebrow">{{ $t('components.general.title.application') }}</p>
+      <button class="ghost-icon" :aria-label="$t('components.general.buttons.back')" @click="goBack">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="M15 18l-6-6 6-6"
@@ -62,37 +69,48 @@ onMounted(() => {
           />
         </svg>
       </button>
-      <h1>{{ $t('components.general.title.application') }}</h1>
-    </header>
+    </div>
 
-    <section>
-      <h2 class="mac-section-title">{{ $t('components.general.title.application') }}</h2>
-      <div class="mac-panel">
-        <ListItem :label="$t('components.general.label.heatmap')">
-          <label class="mac-switch">
-            <input
-              type="checkbox"
-              :disabled="settingsLoading || saveBusy"
-              v-model="heatmapEnabled"
-              @change="persistAppSettings"
-            />
-            <span></span>
-          </label>
-        </ListItem>
-      </div>
-    </section>
+    <div class="general-page">
+      <section>
+        <h2 class="mac-section-title">{{ $t('components.general.title.application') }}</h2>
+        <div class="mac-panel">
+          <ListItem :label="$t('components.general.label.heatmap')">
+            <label class="mac-switch">
+              <input
+                type="checkbox"
+                :disabled="settingsLoading || saveBusy"
+                v-model="heatmapEnabled"
+                @change="persistAppSettings"
+              />
+              <span></span>
+            </label>
+          </ListItem>
+          <ListItem :label="$t('components.general.label.homeTitle')">
+            <label class="mac-switch">
+              <input
+                type="checkbox"
+                :disabled="settingsLoading || saveBusy"
+                v-model="homeTitleVisible"
+                @change="persistAppSettings"
+              />
+              <span></span>
+            </label>
+          </ListItem>
+        </div>
+      </section>
 
-    <section>
-      <h2 class="mac-section-title">{{ $t('components.general.title.exterior') }}</h2>
-      <div class="mac-panel">
-        <ListItem :label="$t('components.general.label.language')">
-          <LanguageSwitcher />
-        </ListItem>
-        <ListItem :label="$t('components.general.label.theme')">
-          <ThemeSetting />
-        </ListItem>
-      </div>
-    </section>
-
+      <section>
+        <h2 class="mac-section-title">{{ $t('components.general.title.exterior') }}</h2>
+        <div class="mac-panel">
+          <ListItem :label="$t('components.general.label.language')">
+            <LanguageSwitcher />
+          </ListItem>
+          <ListItem :label="$t('components.general.label.theme')">
+            <ThemeSetting />
+          </ListItem>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
