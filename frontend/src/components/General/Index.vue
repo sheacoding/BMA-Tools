@@ -108,6 +108,28 @@ const checkUpdateManually = async () => {
 
     if (!info.available) {
       alert('已是最新版本')
+    } else {
+      // 发现新版本，提示用户并开始下载
+      const confirmed = confirm(`发现新版本 ${info.version}，是否立即下载？`)
+      if (confirmed) {
+        downloading.value = true
+        checking.value = false
+        try {
+          await downloadUpdate()
+          await loadUpdateState()
+
+          // 下载完成，提示重启
+          const restart = confirm('新版本已下载完成，是否立即重启应用？')
+          if (restart) {
+            await restartApp()
+          }
+        } catch (downloadError) {
+          console.error('download failed', downloadError)
+          alert('下载失败，请稍后重试')
+        } finally {
+          downloading.value = false
+        }
+      }
     }
   } catch (error) {
     console.error('check update failed', error)

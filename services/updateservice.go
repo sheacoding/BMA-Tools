@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +37,7 @@ type UpdateState struct {
 	LatestKnownVersion  string    `json:"latest_known_version"`
 	DownloadProgress    float64   `json:"download_progress"`
 	UpdateReady         bool      `json:"update_ready"`
+	AutoCheckEnabled    bool      `json:"auto_check_enabled"` // 新增：持久化自动检查开关
 }
 
 // UpdateService 更新服务
@@ -86,7 +88,7 @@ func NewUpdateService(currentVersion string) *UpdateService {
 	// 创建更新目录
 	_ = os.MkdirAll(updateDir, 0o755)
 
-	// 加载状态
+	// 加载状态（如果文件不存在，会保持默认值 true）
 	_ = us.LoadState()
 
 	return us
@@ -572,6 +574,7 @@ func (us *UpdateService) GetUpdateState() *UpdateState {
 		LatestKnownVersion:  us.latestVersion,
 		DownloadProgress:    us.downloadProgress,
 		UpdateReady:         us.updateReady,
+		AutoCheckEnabled:    us.autoCheckEnabled, // 返回自动检查状态
 	}
 }
 
@@ -609,6 +612,7 @@ func (us *UpdateService) SaveState() error {
 		LatestKnownVersion:  us.latestVersion,
 		DownloadProgress:    us.downloadProgress,
 		UpdateReady:         us.updateReady,
+		AutoCheckEnabled:    us.autoCheckEnabled, // 持久化自动检查开关
 	}
 
 	data, err := json.MarshalIndent(state, "", "  ")
@@ -629,7 +633,9 @@ func (us *UpdateService) LoadState() error {
 	data, err := os.ReadFile(us.stateFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // 文件不存在，使用默认值
+			// 文件不存在，保存默认配置
+			_ = us.SaveState()
+			return nil
 		}
 		return fmt.Errorf("读取状态文件失败: %w", err)
 	}
@@ -645,6 +651,15 @@ func (us *UpdateService) LoadState() error {
 	us.latestVersion = state.LatestKnownVersion
 	us.downloadProgress = state.DownloadProgress
 	us.updateReady = state.UpdateReady
+
+	// 检查文件中是否包含 auto_check_enabled 字段
+	// 如果包含，使用文件中的值；否则保持默认值 true（兼容老版本）
+	dataStr := string(data)
+	if strings.Contains(dataStr, "\"auto_check_enabled\"") {
+		// 文件中包含 auto_check_enabled 字段，使用文件中的值
+		us.autoCheckEnabled = state.AutoCheckEnabled
+	}
+	// 否则保持初始化时设置的默认值 true
 	us.mu.Unlock()
 
 	return nil
