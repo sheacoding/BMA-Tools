@@ -159,30 +159,40 @@ jobs:
         with:
           files: release-assets/*
           body: |
-            ## 新增功能
+            ## ✨ 新功能
 
-            ### 优先级分组调度
+            ### 应用自动更新
+            - 新增自动更新功能，支持一键更新到最新版本
+            - 每天 8:00 AM 自动检查 GitHub Release 更新
+            - 网络异常时自动重试 3 次（每次间隔 5 分钟）
+            - 智能重启机制：下载更新后在下次启动时自动应用
 
-            新增 Level 字段（1-10）用于供应商优先级分组，实现更灵活的降级策略。
+            ### 设置界面增强
+            - 设置页面新增"应用更新"板块
+            - 可查看当前版本、最新版本和上次检查时间
+            - 支持手动检查更新和立即下载安装
+            - 提供自动更新开关，状态持久化保存
 
-            **主要改进**：
-            - 后端：重构调度逻辑为两层循环架构，优先尝试高优先级分组
-            - 前端：添加 Level 下拉选择器和可视化徽章（L1-L10）
-            - 国际化：支持中英文 Level 描述文本
-            - 测试：新增单元测试覆盖分组、排序和序列化逻辑
+            ### UI 改进
+            - 主页 GitHub 图标显示更新状态徽章
+              - 🔵 蓝色 "New" 徽章：有新版本可用
+              - 🟡 黄色进度徽章：正在下载更新
+              - 🟢 绿色 "Ready" 徽章（脉冲动画）：更新已就绪，点击重启
+            - 完善中英文国际化翻译
 
-            **使用场景**：
-            - 成本优化：低成本供应商优先，高成本作为备份
-            - 稳定性保障：高质量供应商优先，社区供应商降级
-            - 地域分组：国内供应商优先，国外供应商备份
+            ## 🔧 技术改进
+            - 新增 UpdateService 后端服务（400+ 行）
+            - 版本号管理服务，当前版本 v0.2.5
+            - 状态持久化到 ~/.code-switch/update-state.json
+            - 依赖更新：github.com/hashicorp/go-version v1.7.0
 
-            **向后兼容**：未设置 Level 的供应商自动默认为 Level 1。
+            ## 📦 安装说明
 
-            ## 安装说明
+            - **Windows**：下载 `CodeSwitch-amd64-installer.exe` 运行安装，或下载 `CodeSwitch.exe` 直接运行
+            - **macOS (Apple Silicon)**：下载 `codeswitch-macos-arm64.zip`，解压后拖入 Applications 文件夹
+            - **macOS (Intel)**：下载 `codeswitch-macos-amd64.zip`，解压后拖入 Applications 文件夹
 
-            - **Windows**：下载 `codeswitch-amd64-installer.exe` 运行安装，或下载 `codeswitch.exe` 直接运行
-            - **macOS (Apple Silicon)**：下载 `codeswitch-macos-arm64.zip`
-            - **macOS (Intel)**：下载 `codeswitch-macos-amd64.zip`
+            **完整更新日志**: https://github.com/Rogers-F/code-switch-R/compare/v0.2.4...v0.2.5
           draft: false
           prerelease: false
         env:
