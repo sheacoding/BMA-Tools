@@ -575,7 +575,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
+import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
 import { Browser } from '@wailsio/runtime'
@@ -1082,6 +1082,7 @@ const refreshAllData = async () => {
       loadProvidersFromDisk(),
       ...providerTabIds.map(refreshProxyState),
       ...providerTabIds.map((tab) => loadProviderStats(tab)),
+      ...providerTabIds.map((tab) => loadBlacklistStatus(tab)), // 同步刷新黑名单状态
       refreshImportStatus(),
       pollUpdateState()
     ])
@@ -1221,6 +1222,21 @@ onMounted(async () => {
     })
   }, 1000)
 
+  // 窗口焦点事件：从最小化恢复时立即刷新黑名单状态
+  const handleWindowFocus = () => {
+    void loadBlacklistStatus(activeTab.value)
+  }
+  window.addEventListener('focus', handleWindowFocus)
+
+  // 定期轮询黑名单状态（每 10 秒）
+  const blacklistPollingTimer = window.setInterval(() => {
+    void loadBlacklistStatus(activeTab.value)
+  }, 10_000)
+
+  // 存储定时器 ID 以便清理
+  ;(window as any).__blacklistPollingTimer = blacklistPollingTimer
+  ;(window as any).__handleWindowFocus = handleWindowFocus
+
   window.addEventListener('app-settings-updated', handleAppSettingsUpdated)
 })
 
@@ -1228,14 +1244,27 @@ onUnmounted(() => {
   stopProviderStatsTimer()
   window.removeEventListener('app-settings-updated', handleAppSettingsUpdated)
   stopUpdateTimer()
+
+  // 清理黑名单相关定时器和事件监听
   if (blacklistTimer) {
     window.clearInterval(blacklistTimer)
+  }
+  if ((window as any).__blacklistPollingTimer) {
+    window.clearInterval((window as any).__blacklistPollingTimer)
+  }
+  if ((window as any).__handleWindowFocus) {
+    window.removeEventListener('focus', (window as any).__handleWindowFocus)
   }
 })
 
 const selectedIndex = ref(0)
 const activeTab = computed<ProviderTab>(() => tabs[selectedIndex.value]?.id ?? tabs[0].id)
 const activeCards = computed(() => cards[activeTab.value] ?? [])
+
+// 监听 tab 切换，立即刷新黑名单状态
+watch(activeTab, (newTab) => {
+  void loadBlacklistStatus(newTab)
+})
 const currentProxyLabel = computed(() =>
   activeTab.value === 'claude'
     ? t('components.main.relayToggle.hostClaude')

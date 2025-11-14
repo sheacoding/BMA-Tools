@@ -220,7 +220,8 @@
         "application": "Apply settings",
         "exterior": "Appearance settings",
         "power": "Permission settings",
-        "update": "Application update"
+        "update": "Application update",
+        "blacklist": "Blacklist Settings"
       },
       "label": {
         "assistant_access": "Accessibility permissions",
@@ -238,7 +239,14 @@
         "currentVersion": "Current version",
         "latestVersion": "Latest version",
         "checkNow": "Check now",
-        "manualUpdate": "Manual update"
+        "manualUpdate": "Manual update",
+        "blacklistThreshold": "Failure threshold",
+        "blacklistDuration": "Blacklist duration",
+        "saveBlacklist": "Save settings",
+        "times": "times",
+        "minutes": "minutes",
+        "save": "Save",
+        "saving": "Saving..."
       },
       "subLabel": {
         "sb_assistant_access": "Accessibility permission is required to operate clipboard contents",
