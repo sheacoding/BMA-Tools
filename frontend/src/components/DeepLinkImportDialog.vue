@@ -153,7 +153,20 @@ const handleImport = async () => {
     importing.value = true
     error.value = ''
 
-    const providerId = await DeepLinkService.ImportProviderFromDeepLink(request.value)
+    // 将可能为 null 的字段规范化为 undefined，匹配绑定类型定义
+    const payload: DeepLinkService.DeepLinkImportRequest = {
+      ...request.value,
+      model: request.value.model ?? undefined,
+      notes: request.value.notes ?? undefined,
+      haikuModel: request.value.haikuModel ?? undefined,
+      sonnetModel: request.value.sonnetModel ?? undefined,
+      opusModel: request.value.opusModel ?? undefined,
+      config: request.value.config ?? undefined,
+      configFormat: request.value.configFormat ?? undefined,
+      configUrl: request.value.configUrl ?? undefined,
+    }
+
+    const providerId = await DeepLinkService.ImportProviderFromDeepLink(payload)
 
     imported.value = true
 

@@ -264,7 +264,7 @@ import {
   SwitchProvider,
   CreateProviderFromPreset,
 } from '../../../bindings/codeswitch/services/geminiservice'
-import type { GeminiProvider, GeminiPreset, GeminiStatus, GeminiAuthType } from '../../types/gemini'
+import type { GeminiProvider, GeminiPreset, GeminiStatus } from '../../types/gemini'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -272,6 +272,7 @@ const router = useRouter()
 const geminiIcon = lobeIcons['gemini'] ?? ''
 
 type BindingGeminiStatus = Awaited<ReturnType<typeof GetStatus>>
+type GeminiAuth = BindingGeminiStatus['authType'] | GeminiStatus['authType']
 
 const loading = ref(false)
 const saving = ref(false)
@@ -321,7 +322,7 @@ const reload = async () => {
   }
 }
 
-const authTypeLabel = (authType: GeminiAuthType) => {
+const authTypeLabel = (authType: GeminiAuth) => {
   switch (authType) {
     case 'oauth-personal':
       return t('components.gemini.auth.oauth')

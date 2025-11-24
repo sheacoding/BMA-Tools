@@ -8,12 +8,13 @@ export interface DeepLinkImportRequest {
   homepage: string
   endpoint: string
   apiKey: string
-  model?: string
-  notes?: string
-  haikuModel?: string
-  sonnetModel?: string
-  opusModel?: string
-  config?: string
-  configFormat?: string
-  configUrl?: string
+  // 后端可能返回 null，这里放宽为 string | null
+  model?: string | null
+  notes?: string | null
+  haikuModel?: string | null
+  sonnetModel?: string | null
+  opusModel?: string | null
+  config?: string | null
+  configFormat?: string | null
+  configUrl?: string | null
 }
