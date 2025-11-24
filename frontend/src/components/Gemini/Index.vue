@@ -299,7 +299,7 @@ const modalState = reactive({
 
 const confirmState = reactive({
   open: false,
-  provider: null as GeminiProvider | null,
+  provider: null as BindingGeminiProvider | null,
 })
 
 const goHome = () => router.push('/')
@@ -349,7 +349,7 @@ const categoryLabel = (category: string) => {
   }
 }
 
-const getPresetIcon = (preset: GeminiPreset) => {
+const getPresetIcon = (preset: BindingGeminiPreset) => {
   if (preset.category === 'official') {
     return lobeIcons['google'] ?? geminiIcon
   }
