@@ -113,6 +113,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as DeepLinkService from '../../bindings/codeswitch/services/deeplinkservice'
+import type { DeepLinkImportRequest as BindingDeepLinkRequest } from '../../bindings/codeswitch/services/deeplinkservice'
 import type { DeepLinkImportRequest } from '../types/deeplink'
 
 const { t } = useI18n()
@@ -154,8 +155,14 @@ const handleImport = async () => {
     error.value = ''
 
     // 将可能为 null 的字段规范化为 undefined，匹配绑定类型定义
-    const payload: DeepLinkImportRequest = {
-      ...request.value,
+    const payload: BindingDeepLinkRequest = {
+      version: request.value.version,
+      resource: request.value.resource,
+      app: request.value.app,
+      name: request.value.name,
+      homepage: request.value.homepage,
+      endpoint: request.value.endpoint,
+      apiKey: request.value.apiKey,
       model: request.value.model ?? undefined,
       notes: request.value.notes ?? undefined,
       haikuModel: request.value.haikuModel ?? undefined,
