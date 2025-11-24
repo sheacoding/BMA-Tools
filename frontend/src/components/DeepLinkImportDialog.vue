@@ -115,6 +115,8 @@ import { useI18n } from 'vue-i18n'
 import * as DeepLinkService from '../../bindings/codeswitch/services/deeplinkservice'
 import type { DeepLinkImportRequest } from '../types/deeplink'
 
+type BindingDeepLinkImportRequest = Awaited<ReturnType<typeof DeepLinkService.ParseDeepLinkURL>>
+
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -154,7 +156,7 @@ const handleImport = async () => {
     error.value = ''
 
     // 将可能为 null 的字段规范化为 undefined，匹配绑定类型定义
-    const payload: DeepLinkService.DeepLinkImportRequest = {
+    const payload: BindingDeepLinkImportRequest = {
       ...request.value,
       model: request.value.model ?? undefined,
       notes: request.value.notes ?? undefined,

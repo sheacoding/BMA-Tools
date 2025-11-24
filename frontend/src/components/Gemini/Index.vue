@@ -47,7 +47,7 @@
           <div class="status-info">
             <p class="status-title">{{ status.enabled ? t('components.gemini.status.enabled') : t('components.gemini.status.disabled') }}</p>
             <p v-if="status.currentProvider" class="status-provider">{{ status.currentProvider }}</p>
-            <p class="status-auth">{{ authTypeLabel(status.authType) }}</p>
+            <p class="status-auth">{{ authTypeLabel(status?.authType ?? 'gemini-api-key') }}</p>
           </div>
         </div>
       </section>
