@@ -23,12 +23,13 @@ import (
 
 type ProviderRelayService struct {
 	providerService  *ProviderService
+	geminiService    *GeminiService
 	blacklistService *BlacklistService
 	server           *http.Server
 	addr             string
 }
 
-func NewProviderRelayService(providerService *ProviderService, blacklistService *BlacklistService, addr string) *ProviderRelayService {
+func NewProviderRelayService(providerService *ProviderService, geminiService *GeminiService, blacklistService *BlacklistService, addr string) *ProviderRelayService {
 	if addr == "" {
 		addr = ":18100"
 	}
@@ -54,6 +55,7 @@ func NewProviderRelayService(providerService *ProviderService, blacklistService 
 
 	return &ProviderRelayService{
 		providerService:  providerService,
+		geminiService:    geminiService,
 		blacklistService: blacklistService,
 		addr:             addr,
 	}
@@ -146,6 +148,10 @@ func (prs *ProviderRelayService) Addr() string {
 func (prs *ProviderRelayService) registerRoutes(router gin.IRouter) {
 	router.POST("/v1/messages", prs.proxyHandler("claude", "/v1/messages"))
 	router.POST("/responses", prs.proxyHandler("codex", "/responses"))
+
+	// Gemini API 端点（支持 v1 和 v1beta）
+	router.POST("/v1beta/*any", prs.geminiProxyHandler("/v1beta"))
+	router.POST("/v1/*any", prs.geminiProxyHandler("/v1"))
 }
 
 func (prs *ProviderRelayService) proxyHandler(kind string, endpoint string) gin.HandlerFunc {
@@ -566,4 +572,158 @@ func ReplaceModelInRequestBody(bodyBytes []byte, newModel string) ([]byte, error
 	}
 
 	return modified, nil
+}
+
+// geminiProxyHandler 处理 Gemini API 请求
+func (prs *ProviderRelayService) geminiProxyHandler(apiVersion string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取完整路径（例如 /v1beta/models/gemini-2.5-pro:generateContent）
+		fullPath := c.Param("any") // 获取 *any 通配符匹配的部分
+		endpoint := apiVersion + fullPath
+
+		fmt.Printf("[Gemini] 收到请求: %s\n", endpoint)
+
+		// 读取请求体
+		var bodyBytes []byte
+		if c.Request.Body != nil {
+			data, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+				return
+			}
+			bodyBytes = data
+			c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
+
+		// 判断是否为流式请求
+		isStream := strings.Contains(endpoint, ":streamGenerateContent")
+
+		// 加载 Gemini providers
+		providers := prs.geminiService.GetProviders()
+		if len(providers) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "no gemini providers configured"})
+			return
+		}
+
+		// 查找启用的 provider
+		var activeProvider *GeminiProvider
+		for i := range providers {
+			if providers[i].Enabled && providers[i].BaseURL != "" {
+				activeProvider = &providers[i]
+				break
+			}
+		}
+
+		if activeProvider == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "no active gemini provider"})
+			return
+		}
+
+		fmt.Printf("[Gemini] 使用 Provider: %s | BaseURL: %s\n", activeProvider.Name, activeProvider.BaseURL)
+
+		// 构建目标 URL
+		targetURL := strings.TrimSuffix(activeProvider.BaseURL, "/") + endpoint
+		fmt.Printf("[Gemini] 转发到: %s\n", targetURL)
+
+		// 创建 HTTP 请求
+		req, err := http.NewRequest("POST", targetURL, bytes.NewReader(bodyBytes))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("创建请求失败: %v", err)})
+			return
+		}
+
+		// 复制请求头
+		for key, values := range c.Request.Header {
+			for _, value := range values {
+				req.Header.Add(key, value)
+			}
+		}
+
+		// 设置 API Key（如果有）
+		if activeProvider.APIKey != "" {
+			// Gemini API 使用 x-goog-api-key 头
+			req.Header.Set("x-goog-api-key", activeProvider.APIKey)
+		}
+
+		// 记录开始时间
+		startTime := time.Now()
+
+		// 创建请求日志
+		usage := &ReqeustLog{
+			Provider:     activeProvider.Name,
+			Platform:     "gemini",
+			Model:        activeProvider.Model,
+			IsStream:     isStream,
+			InputTokens:  0,
+			OutputTokens: 0,
+		}
+
+		// 发送请求
+		client := &http.Client{Timeout: 300 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			duration := time.Since(startTime).Seconds()
+			usage.DurationSec = duration
+			_ = SaveRequestLog(usage)
+
+			c.JSON(http.StatusBadGateway, gin.H{"error": fmt.Sprintf("请求失败: %v", err)})
+			return
+		}
+		defer resp.Body.Close()
+
+		// 计算耗时
+		duration := time.Since(startTime).Seconds()
+		usage.DurationSec = duration
+
+		fmt.Printf("[Gemini] Provider %s 响应: %d | 耗时: %.2fs\n", activeProvider.Name, resp.StatusCode, duration)
+
+		// 如果不是成功响应，直接返回错误
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			errorBody, _ := io.ReadAll(resp.Body)
+			_ = SaveRequestLog(usage)
+
+			c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), errorBody)
+			return
+		}
+
+		// 复制响应头
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+
+		c.Status(resp.StatusCode)
+
+		// 处理响应
+		if isStream {
+			// 流式响应 - 使用 SSE 钩子
+			hook := func(data []byte) (bool, []byte) {
+				// TODO: 解析 Gemini 的 token usage
+				// Gemini SSE 格式可能与 Claude 不同，需要根据实际 API 调整
+				return true, data
+			}
+
+			if err := xrequest.StreamTransfer(c.Writer, resp.Body, hook); err != nil {
+				fmt.Printf("[Gemini] 流式传输失败: %v\n", err)
+			}
+		} else {
+			// 非流式响应 - 直接复制
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "读取响应失败"})
+				return
+			}
+
+			// TODO: 解析 Gemini 的 token usage from body
+			// Gemini API 的 usage 格式可能在 body 中的 usageMetadata 字段
+
+			c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+		}
+
+		// 保存请求日志
+		_ = SaveRequestLog(usage)
+
+		fmt.Printf("[Gemini] ✓ 请求完成 | Provider: %s | 耗时: %.2fs\n", activeProvider.Name, duration)
+	}
 }

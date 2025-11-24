@@ -236,13 +236,6 @@
           </button>
           <button
             class="ghost-icon"
-            :data-tooltip="t('components.main.controls.gemini')"
-            @click="goToGemini"
-          >
-            <span class="icon-svg" v-html="geminiIcon" aria-hidden="true"></span>
-          </button>
-          <button
-            class="ghost-icon"
             :data-tooltip="t('components.main.logs.view')"
             @click="goToLogs"
           >
@@ -666,7 +659,10 @@ import BaseInput from '../common/BaseInput.vue'
 import ModelWhitelistEditor from '../common/ModelWhitelistEditor.vue'
 import ModelMappingEditor from '../common/ModelMappingEditor.vue'
 import { LoadProviders, SaveProviders, DuplicateProvider } from '../../../bindings/codeswitch/services/providerservice'
+import { GetProviders as GetGeminiProviders, UpdateProvider as UpdateGeminiProvider } from '../../../bindings/codeswitch/services/geminiservice'
+import type { GeminiProvider } from '../../../bindings/codeswitch/services/geminiservice'
 import { fetchProxyStatus, enableProxy, disableProxy } from '../../services/claudeSettings'
+import { fetchGeminiProxyStatus, enableGeminiProxy, disableGeminiProxy } from '../../services/geminiSettings'
 import { fetchHeatmapStats, fetchProviderDailyStats, type ProviderDailyStat } from '../../services/logs'
 import { fetchCurrentVersion } from '../../services/version'
 import { fetchAppSettings, type AppSettings } from '../../services/appSettings'
@@ -697,30 +693,34 @@ const tooltipRef = ref<HTMLElement | null>(null)
 const proxyStates = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
+  gemini: false,
 })
 const proxyBusy = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
+  gemini: false,
 })
 
 const providerStatsMap = reactive<Record<ProviderTab, Record<string, ProviderDailyStat>>>({
   claude: {},
   codex: {},
-} as Record<ProviderTab, Record<string, ProviderDailyStat>>)
+  gemini: {},
+})
 const providerStatsLoading = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
-} as Record<ProviderTab, boolean>)
+  gemini: false,
+})
 const providerStatsLoaded = reactive<Record<ProviderTab, boolean>>({
   claude: false,
   codex: false,
-} as Record<ProviderTab, boolean>)
+  gemini: false,
+})
 let providerStatsTimer: number | undefined
 let updateTimer: number | undefined
 const showHeatmap = ref(true)
 const showHomeTitle = ref(true)
 const mcpIcon = lobeIcons['mcp'] ?? ''
-const geminiIcon = lobeIcons['gemini'] ?? ''
 const appVersion = ref('')
 const hasUpdateAvailable = ref(false)
 const updateReady = ref(false)
@@ -732,6 +732,7 @@ const importBusy = ref(false)
 const blacklistStatusMap = reactive<Record<ProviderTab, Record<string, BlacklistStatus>>>({
   claude: {},
   codex: {},
+  gemini: {},
 })
 let blacklistTimer: number | undefined
 
@@ -1008,6 +1009,7 @@ const loadUsageHeatmap = async () => {
 const tabs = [
   { id: 'claude', label: 'Claude Code' },
   { id: 'codex', label: 'Codex' },
+  { id: 'gemini', label: 'Gemini' },
 ] as const
 type ProviderTab = (typeof tabs)[number]['id']
 const providerTabIds = tabs.map((tab) => tab.id) as ProviderTab[]
@@ -1015,14 +1017,52 @@ const providerTabIds = tabs.map((tab) => tab.id) as ProviderTab[]
 const cards = reactive<Record<ProviderTab, AutomationCard[]>>({
   claude: createAutomationCards(automationCardGroups.claude),
   codex: createAutomationCards(automationCardGroups.codex),
+  gemini: [],
 })
 const draggingId = ref<number | null>(null)
 
+// Gemini Provider 到 AutomationCard 的转换
+const geminiToCard = (provider: GeminiProvider, index: number): AutomationCard => ({
+  id: 300 + index, // Gemini 使用 300+ 的 ID 范围
+  name: provider.name,
+  apiUrl: provider.baseUrl || '',
+  apiKey: provider.apiKey || '',
+  officialSite: provider.websiteUrl || '',
+  icon: 'gemini',
+  tint: 'rgba(251, 146, 60, 0.18)',
+  accent: '#fb923c',
+  enabled: provider.enabled,
+})
+
+// AutomationCard 到 Gemini Provider 的转换
+const cardToGemini = (card: AutomationCard, original: GeminiProvider): GeminiProvider => ({
+  ...original,
+  name: card.name,
+  baseUrl: card.apiUrl,
+  apiKey: card.apiKey,
+  websiteUrl: card.officialSite,
+  enabled: card.enabled,
+})
+
 const serializeProviders = (providers: AutomationCard[]) => providers.map((provider) => ({ ...provider }))
+
+// 存储 Gemini 原始数据，用于转换回去
+const geminiProvidersCache = ref<GeminiProvider[]>([])
 
 const persistProviders = async (tabId: ProviderTab) => {
   try {
-    await SaveProviders(tabId, serializeProviders(cards[tabId]))
+    if (tabId === 'gemini') {
+      // Gemini 使用独立的保存逻辑
+      for (let i = 0; i < cards.gemini.length; i++) {
+        const card = cards.gemini[i]
+        const original = geminiProvidersCache.value[i]
+        if (original) {
+          await UpdateGeminiProvider(cardToGemini(card, original))
+        }
+      }
+    } else {
+      await SaveProviders(tabId, serializeProviders(cards[tabId]))
+    }
   } catch (error) {
     console.error('Failed to save providers', error)
   }
@@ -1035,11 +1075,18 @@ const replaceProviders = (tabId: ProviderTab, data: AutomationCard[]) => {
 const loadProvidersFromDisk = async () => {
   for (const tab of providerTabIds) {
     try {
-      const saved = await LoadProviders(tab)
-      if (Array.isArray(saved)) {
-        replaceProviders(tab, saved as AutomationCard[])
+      if (tab === 'gemini') {
+        // Gemini 使用独立的加载逻辑
+        const geminiProviders = await GetGeminiProviders()
+        geminiProvidersCache.value = geminiProviders
+        cards.gemini.splice(0, cards.gemini.length, ...geminiProviders.map(geminiToCard))
       } else {
-        await persistProviders(tab)
+        const saved = await LoadProviders(tab)
+        if (Array.isArray(saved)) {
+          replaceProviders(tab, saved as AutomationCard[])
+        } else {
+          await persistProviders(tab)
+        }
       }
     } catch (error) {
       console.error('Failed to load providers', error)
@@ -1058,8 +1105,13 @@ const refreshImportStatus = async () => {
 
 const refreshProxyState = async (tab: ProviderTab) => {
   try {
-    const status = await fetchProxyStatus(tab)
-    proxyStates[tab] = Boolean(status?.enabled)
+    if (tab === 'gemini') {
+      const status = await fetchGeminiProxyStatus()
+      proxyStates[tab] = Boolean(status?.enabled)
+    } else {
+      const status = await fetchProxyStatus(tab as 'claude' | 'codex')
+      proxyStates[tab] = Boolean(status?.enabled)
+    }
   } catch (error) {
     console.error(`Failed to fetch proxy status for ${tab}`, error)
     proxyStates[tab] = false
@@ -1072,10 +1124,18 @@ const onProxyToggle = async () => {
   proxyBusy[tab] = true
   const nextState = !proxyStates[tab]
   try {
-    if (nextState) {
-      await enableProxy(tab)
+    if (tab === 'gemini') {
+      if (nextState) {
+        await enableGeminiProxy()
+      } else {
+        await disableGeminiProxy()
+      }
     } else {
-      await disableProxy(tab)
+      if (nextState) {
+        await enableProxy(tab as 'claude' | 'codex')
+      } else {
+        await disableProxy(tab as 'claude' | 'codex')
+      }
     }
     proxyStates[tab] = nextState
   } catch (error) {
@@ -1088,7 +1148,8 @@ const onProxyToggle = async () => {
 const loadProviderStats = async (tab: ProviderTab) => {
   providerStatsLoading[tab] = true
   try {
-    const stats = await fetchProviderDailyStats(tab)
+    // Gemini 统计数据目前通过相同的日志接口，直接查询
+    const stats = await fetchProviderDailyStats(tab as 'claude' | 'codex' | 'gemini')
     const mapped: Record<string, ProviderDailyStat> = {}
     ;(stats ?? []).forEach((stat) => {
       mapped[normalizeProviderKey(stat.provider)] = stat
@@ -1372,10 +1433,6 @@ const goToSkill = () => {
   router.push('/skill')
 }
 
-const goToGemini = () => {
-  router.push('/gemini')
-}
-
 const goToSettings = () => {
   router.push('/settings')
 }
@@ -1585,14 +1642,41 @@ const requestRemove = (card: AutomationCard) => {
 // 复制供应商
 const handleDuplicate = async (card: AutomationCard) => {
   try {
-    const newProvider = await DuplicateProvider(activeTab.value, card.id)
-    if (!newProvider) {
-      console.warn('[Duplicate] DuplicateProvider 返回空结果，已跳过刷新')
-      return
+    const tab = activeTab.value
+
+    if (tab === 'gemini') {
+      // Gemini 使用字符串 ID，需要从 cache 中找到原始 provider
+      const index = cards.gemini.findIndex(c => c.id === card.id)
+      if (index === -1 || !geminiProvidersCache.value[index]) {
+        console.error('[Duplicate] 未找到 Gemini provider')
+        return
+      }
+
+      const originalProvider = geminiProvidersCache.value[index]
+      // 调用 Gemini 的 DuplicateProvider API（字符串 ID）
+      const newProvider = await Call.ByName(
+        'codeswitch/services.GeminiService.DuplicateProvider',
+        originalProvider.id
+      )
+
+      if (!newProvider) {
+        console.warn('[Duplicate] DuplicateProvider 返回空结果，已跳过刷新')
+        return
+      }
+
+      console.log(`[Duplicate] Gemini Provider "${card.name}" duplicated`)
+    } else {
+      // Claude/Codex 使用数字 ID
+      const newProvider = await DuplicateProvider(tab, card.id)
+      if (!newProvider) {
+        console.warn('[Duplicate] DuplicateProvider 返回空结果，已跳过刷新')
+        return
+      }
+      console.log(`[Duplicate] Provider "${card.name}" duplicated as "${newProvider.name}"`)
     }
+
     // 刷新列表以显示新副本
     await loadProvidersFromDisk()
-    console.log(`[Duplicate] Provider "${card.name}" duplicated as "${newProvider.name}"`)
   } catch (error) {
     console.error('[Duplicate] Failed to duplicate provider:', error)
   }

@@ -64,12 +64,17 @@ type GeminiService struct {
 	mu        sync.Mutex
 	providers []GeminiProvider
 	presets   []GeminiPreset
+	relayAddr string
 }
 
 // NewGeminiService 创建 Gemini 服务
-func NewGeminiService() *GeminiService {
+func NewGeminiService(relayAddr string) *GeminiService {
+	if relayAddr == "" {
+		relayAddr = ":18100"
+	}
 	svc := &GeminiService{
-		presets: getGeminiPresets(),
+		presets:   getGeminiPresets(),
+		relayAddr: relayAddr,
 	}
 	// 加载已保存的供应商配置
 	_ = svc.loadProviders()
@@ -606,4 +611,174 @@ func (s *GeminiService) CreateProviderFromPreset(presetName string, apiKey strin
 	}
 
 	return &provider, nil
+}
+
+// GeminiProxyStatus Gemini 代理状态
+type GeminiProxyStatus struct {
+	Enabled bool   `json:"enabled"`
+	BaseURL string `json:"base_url"`
+}
+
+// ProxyStatus 获取代理状态
+func (s *GeminiService) ProxyStatus() (*GeminiProxyStatus, error) {
+	status := &GeminiProxyStatus{
+		Enabled: false,
+		BaseURL: buildProxyURL(s.relayAddr),
+	}
+
+	// 读取 .env 文件
+	envConfig, err := readGeminiEnv()
+	if err != nil {
+		// 文件不存在时返回默认状态
+		if os.IsNotExist(err) {
+			return status, nil
+		}
+		return status, err
+	}
+
+	// 检查是否指向代理
+	baseURL := envConfig["GOOGLE_GEMINI_BASE_URL"]
+	proxyURL := buildProxyURL(s.relayAddr)
+	status.Enabled = strings.EqualFold(baseURL, proxyURL)
+
+	return status, nil
+}
+
+// EnableProxy 启用代理
+func (s *GeminiService) EnableProxy() error {
+	dir := getGeminiDir()
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+
+	envPath := getGeminiEnvPath()
+	backupPath := envPath + ".cc-studio.backup"
+
+	// 备份现有 .env（如果存在）
+	if _, err := os.Stat(envPath); err == nil {
+		content, readErr := os.ReadFile(envPath)
+		if readErr != nil {
+			return fmt.Errorf("读取现有 .env 失败: %w", readErr)
+		}
+		if err := os.WriteFile(backupPath, content, 0600); err != nil {
+			return fmt.Errorf("备份 .env 失败: %w", err)
+		}
+	}
+
+	// 读取现有配置（如果有）
+	existingEnv, _ := readGeminiEnv()
+	if existingEnv == nil {
+		existingEnv = make(map[string]string)
+	}
+
+	// 设置代理 URL
+	existingEnv["GOOGLE_GEMINI_BASE_URL"] = buildProxyURL(s.relayAddr)
+
+	// 写入 .env
+	if err := writeGeminiEnv(existingEnv); err != nil {
+		return fmt.Errorf("写入 .env 失败: %w", err)
+	}
+
+	return nil
+}
+
+// DisableProxy 禁用代理
+func (s *GeminiService) DisableProxy() error {
+	envPath := getGeminiEnvPath()
+	backupPath := envPath + ".cc-studio.backup"
+
+	// 删除当前 .env
+	if err := os.Remove(envPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("删除 .env 失败: %w", err)
+	}
+
+	// 恢复备份（如果存在）
+	if _, err := os.Stat(backupPath); err == nil {
+		if err := os.Rename(backupPath, envPath); err != nil {
+			return fmt.Errorf("恢复备份失败: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("检查备份文件失败: %w", err)
+	}
+
+	return nil
+}
+
+// buildProxyURL 构建代理 URL
+func buildProxyURL(relayAddr string) string {
+	addr := strings.TrimSpace(relayAddr)
+	if addr == "" {
+		addr = ":18100"
+	}
+	if strings.HasPrefix(addr, "http://") || strings.HasPrefix(addr, "https://") {
+		return addr
+	}
+	host := addr
+	if strings.HasPrefix(host, ":") {
+		host = "127.0.0.1" + host
+	}
+	if !strings.Contains(host, "://") {
+		host = "http://" + host
+	}
+	return host
+}
+
+// DuplicateProvider 复制供应商
+func (s *GeminiService) DuplicateProvider(sourceID string) (*GeminiProvider, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// 1. 查找源供应商
+	var source *GeminiProvider
+	for i := range s.providers {
+		if s.providers[i].ID == sourceID {
+			source = &s.providers[i]
+			break
+		}
+	}
+	if source == nil {
+		return nil, fmt.Errorf("未找到 ID 为 '%s' 的供应商", sourceID)
+	}
+
+	// 2. 生成新 ID（基于时间戳保证唯一性）
+	newID := fmt.Sprintf("%s-copy-%d", sourceID, time.Now().Unix())
+
+	// 3. 克隆配置（深拷贝）
+	cloned := GeminiProvider{
+		ID:                  newID,
+		Name:                source.Name + " (副本)",
+		WebsiteURL:          source.WebsiteURL,
+		APIKeyURL:           source.APIKeyURL,
+		BaseURL:             source.BaseURL,
+		APIKey:              source.APIKey,
+		Model:               source.Model,
+		Description:         source.Description,
+		Category:            source.Category,
+		PartnerPromotionKey: source.PartnerPromotionKey,
+		Enabled:             false, // 默认禁用，避免与源供应商冲突
+	}
+
+	// 4. 深拷贝 map（避免共享引用）
+	if source.EnvConfig != nil {
+		cloned.EnvConfig = make(map[string]string, len(source.EnvConfig))
+		for k, v := range source.EnvConfig {
+			cloned.EnvConfig[k] = v
+		}
+	}
+
+	if source.SettingsConfig != nil {
+		cloned.SettingsConfig = make(map[string]any, len(source.SettingsConfig))
+		for k, v := range source.SettingsConfig {
+			// 对于 map/slice 类型的值，需要深拷贝（简化处理，直接赋值）
+			cloned.SettingsConfig[k] = v
+		}
+	}
+
+	// 5. 添加到列表并保存
+	s.providers = append(s.providers, cloned)
+	if err := s.saveProviders(); err != nil {
+		return nil, fmt.Errorf("保存副本失败: %w", err)
+	}
+
+	return &cloned, nil
 }
