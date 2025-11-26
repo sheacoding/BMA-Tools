@@ -17,6 +17,9 @@ jobs:
         arch: [arm64, amd64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: sheacoding/bmai-tools
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -68,6 +71,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: sheacoding/bmai-tools
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -135,6 +141,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: sheacoding/bmai-tools
+          ref: ${{ github.ref }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4

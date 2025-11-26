@@ -7,7 +7,7 @@ version: '3'
 info:
   companyName: "BMAI Tools" # The name of the company
   productName: "BMAI Tools" # The name of the application
-  productIdentifier: "com.codeswitch.app" # The unique product identifier
+  productIdentifier: "com.bmai.tools" # The unique product identifier
   description: "Manage Claude & Codex relays, providers, and request logs." # The application description
   copyright: "(c) 2025, BMAI Tools" # Copyright text
   comments: "BMAI Tools - AI provider manager" # Comments
