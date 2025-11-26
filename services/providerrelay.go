@@ -323,7 +323,8 @@ func (prs *ProviderRelayService) forwardRequest(
 	isStream bool,
 	model string,
 ) (bool, error) {
-	targetURL := joinURL(provider.APIURL, endpoint)
+	// 使用 apiUrl + endpoint 作为转发目标
+	targetURL := strings.TrimSuffix(provider.APIURL, "/") + endpoint
 	headers := cloneMap(clientHeaders)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", provider.APIKey)
 	if _, ok := headers["Accept"]; !ok {
@@ -416,12 +417,6 @@ func flattenQuery(values map[string][]string) map[string]string {
 		}
 	}
 	return query
-}
-
-func joinURL(base string, endpoint string) string {
-	base = strings.TrimSuffix(base, "/")
-	endpoint = "/" + strings.TrimPrefix(endpoint, "/")
-	return base + endpoint
 }
 
 func boolToInt(b bool) int {

@@ -124,17 +124,21 @@ func (ps *ProviderService) SaveProviders(kind string, providers []Provider) erro
 }
 
 // getDefaultProviders 返回默认供应商列表
-func getDefaultProviders() []Provider {
+func getDefaultProviders(kind string) []Provider {
+	apiURL := "https://claude.kun8.vip/api" // Claude Code 默认
+	if kind == "codex" {
+		apiURL = "https://claude.kun8.vip/openai"
+	}
 	return []Provider{
 		{
 			ID:      1,
 			Name:    "BMAI",
-			APIURL:  "https://claude.kun8.vip/v1",
+			APIURL:  apiURL,
 			APIKey:  "",
 			Site:    "https://claude.kun8.vip/",
-			Icon:    "anthropic",
-			Tint:    "#D97757",
-			Accent:  "#D97757",
+			Icon:    "claude",
+			Tint:    "#F5F5F5",
+			Accent:  "#988c88ff",
 			Enabled: true,
 			Level:   1,
 		},
@@ -151,7 +155,7 @@ func (ps *ProviderService) LoadProviders(kind string) ([]Provider, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// 文件不存在时返回默认供应商
-			return getDefaultProviders(), nil
+			return getDefaultProviders(kind), nil
 		}
 		return nil, err
 	}
@@ -159,7 +163,7 @@ func (ps *ProviderService) LoadProviders(kind string) ([]Provider, error) {
 	var envelope providerEnvelope
 	if len(data) == 0 {
 		// 空文件时返回默认供应商
-		return getDefaultProviders(), nil
+		return getDefaultProviders(kind), nil
 	}
 
 	if err := json.Unmarshal(data, &envelope); err != nil {
@@ -168,7 +172,7 @@ func (ps *ProviderService) LoadProviders(kind string) ([]Provider, error) {
 
 	// 如果配置为空，返回默认供应商
 	if len(envelope.Providers) == 0 {
-		return getDefaultProviders(), nil
+		return getDefaultProviders(kind), nil
 	}
 
 	return envelope.Providers, nil
