@@ -133,7 +133,7 @@ func (us *UpdateService) CheckUpdate() (*UpdateInfo, error) {
 		Timeout: 10 * time.Second,
 	}
 
-	releaseURL := "https://api.github.com/repos/Rogers-F/code-switch-R/releases/latest"
+	releaseURL := "https://api.github.com/repos/bayma888/bmai-tools/releases/latest"
 
 	req, err := http.NewRequest("GET", releaseURL, nil)
 	if err != nil {

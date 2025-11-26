@@ -14,10 +14,10 @@ import (
 type GeminiAuthType string
 
 const (
-	GeminiAuthOAuth      GeminiAuthType = "oauth-personal"   // Google 官方 OAuth
-	GeminiAuthAPIKey     GeminiAuthType = "gemini-api-key"   // API Key 认证
-	GeminiAuthPackycode  GeminiAuthType = "packycode"        // PackyCode 合作方
-	GeminiAuthGeneric    GeminiAuthType = "generic"          // 通用第三方
+	GeminiAuthOAuth     GeminiAuthType = "oauth-personal" // Google 官方 OAuth
+	GeminiAuthAPIKey    GeminiAuthType = "gemini-api-key" // API Key 认证
+	GeminiAuthPackycode GeminiAuthType = "packycode"      // PackyCode 合作方
+	GeminiAuthGeneric   GeminiAuthType = "generic"        // 通用第三方
 )
 
 // GeminiProvider Gemini 供应商配置
@@ -33,8 +33,8 @@ type GeminiProvider struct {
 	Category            string            `json:"category,omitempty"`            // official, third_party, custom
 	PartnerPromotionKey string            `json:"partnerPromotionKey,omitempty"` // 用于识别供应商类型
 	Enabled             bool              `json:"enabled"`
-	EnvConfig           map[string]string `json:"envConfig,omitempty"`           // .env 配置
-	SettingsConfig      map[string]any    `json:"settingsConfig,omitempty"`      // settings.json 配置
+	EnvConfig           map[string]string `json:"envConfig,omitempty"`      // .env 配置
+	SettingsConfig      map[string]any    `json:"settingsConfig,omitempty"` // settings.json 配置
 }
 
 // GeminiPreset 预设供应商
@@ -52,12 +52,12 @@ type GeminiPreset struct {
 
 // GeminiStatus Gemini 配置状态
 type GeminiStatus struct {
-	Enabled        bool           `json:"enabled"`
+	Enabled         bool           `json:"enabled"`
 	CurrentProvider string         `json:"currentProvider,omitempty"`
-	AuthType       GeminiAuthType `json:"authType"`
-	HasAPIKey      bool           `json:"hasApiKey"`
-	HasBaseURL     bool           `json:"hasBaseUrl"`
-	Model          string         `json:"model,omitempty"`
+	AuthType        GeminiAuthType `json:"authType"`
+	HasAPIKey       bool           `json:"hasApiKey"`
+	HasBaseURL      bool           `json:"hasBaseUrl"`
+	Model           string         `json:"model,omitempty"`
 }
 
 // GeminiService Gemini 配置管理服务
@@ -532,19 +532,50 @@ func deepMerge(dst, src map[string]any) map[string]any {
 	return result
 }
 
+// getDefaultGeminiProviders 返回默认 Gemini 供应商列表
+func getDefaultGeminiProviders() []GeminiProvider {
+	return []GeminiProvider{
+		{
+			ID:          "gemini-bmai-1",
+			Name:        "BMAI",
+			WebsiteURL:  "https://claude.kun8.vip/",
+			BaseURL:     "https://claude.kun8.vip/v1",
+			APIKey:      "",
+			Model:       "gemini-2.5-pro-preview",
+			Description: "BMAI Gemini 中转服务",
+			Category:    "third_party",
+			Enabled:     true,
+			EnvConfig: map[string]string{
+				"GOOGLE_GEMINI_BASE_URL": "https://claude.kun8.vip/v1",
+				"GEMINI_MODEL":           "gemini-2.5-pro-preview",
+			},
+		},
+	}
+}
+
 // loadProviders 加载供应商配置
 func (s *GeminiService) loadProviders() error {
 	path := getGeminiProvidersPath()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			s.providers = []GeminiProvider{}
+			// 文件不存在时返回默认供应商
+			s.providers = getDefaultGeminiProviders()
 			return nil
 		}
 		return err
 	}
 
-	return json.Unmarshal(data, &s.providers)
+	if err := json.Unmarshal(data, &s.providers); err != nil {
+		return err
+	}
+
+	// 如果配置为空，返回默认供应商
+	if len(s.providers) == 0 {
+		s.providers = getDefaultGeminiProviders()
+	}
+
+	return nil
 }
 
 // saveProviders 保存供应商配置

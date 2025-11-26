@@ -44,25 +44,24 @@ jobs:
       - name: Find app bundle
         id: find-app
         run: |
-          if [ -d "bin/codeswitch.app" ]; then
-            echo "app_path=bin/codeswitch.app" >> $GITHUB_OUTPUT
-          elif [ -d "bin/CodeSwitch.app" ]; then
-            echo "app_path=bin/CodeSwitch.app" >> $GITHUB_OUTPUT
+          if [ -d "bin/BMAITools.app" ]; then
+            echo "app_path=bin/BMAITools.app" >> $GITHUB_OUTPUT
           else
             echo "App bundle not found" >&2
+            ls -la bin/
             exit 1
           fi
 
       - name: Archive macOS app
         run: |
           cd bin
-          ditto -c -k --sequesterRsrc --keepParent "$(basename ${{ steps.find-app.outputs.app_path }})" codeswitch-macos-${{ matrix.arch }}.zip
+          ditto -c -k --sequesterRsrc --keepParent "$(basename ${{ steps.find-app.outputs.app_path }})" BMAITools-macos-${{ matrix.arch }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: bin/codeswitch-macos-${{ matrix.arch }}.zip
+          path: bin/BMAITools-macos-${{ matrix.arch }}.zip
 
   build-windows:
     name: Build Windows
@@ -102,9 +101,9 @@ jobs:
 
       - name: Verify Binary
         run: |
-          if (Test-Path "bin\CodeSwitch.exe") {
-            Write-Host "✓ Binary found: bin\CodeSwitch.exe"
-            Get-Item "bin\CodeSwitch.exe" | Format-List Name,Length,LastWriteTime
+          if (Test-Path "bin\BMAITools.exe") {
+            Write-Host "✓ Binary found: bin\BMAITools.exe"
+            Get-Item "bin\BMAITools.exe" | Format-List Name,Length,LastWriteTime
           } else {
             Write-Host "✗ Binary not found!"
             Write-Host "Listing bin directory:"
@@ -117,7 +116,7 @@ jobs:
           $env:PATH += ";C:\Program Files (x86)\NSIS"
           Push-Location build\windows\nsis
           wails3 generate webview2bootstrapper
-          $binaryPath = (Resolve-Path "..\..\..\bin\CodeSwitch.exe").Path
+          $binaryPath = (Resolve-Path "..\..\..\bin\BMAITools.exe").Path
           Write-Host "Binary path: $binaryPath"
           makensis -DARG_WAILS_AMD64_BINARY="$binaryPath" project.nsi
           Pop-Location
@@ -127,8 +126,8 @@ jobs:
         with:
           name: windows-amd64
           path: |
-            bin/CodeSwitch-amd64-installer.exe
-            bin/CodeSwitch.exe
+            bin/BMAITools-amd64-installer.exe
+            bin/BMAITools.exe
 
   create-release:
     name: Create Release
@@ -148,10 +147,10 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          cp artifacts/macos-arm64/codeswitch-macos-arm64.zip release-assets/
-          cp artifacts/macos-amd64/codeswitch-macos-amd64.zip release-assets/
-          cp artifacts/windows-amd64/CodeSwitch-amd64-installer.exe release-assets/
-          cp artifacts/windows-amd64/CodeSwitch.exe release-assets/
+          cp artifacts/macos-arm64/BMAITools-macos-arm64.zip release-assets/
+          cp artifacts/macos-amd64/BMAITools-macos-amd64.zip release-assets/
+          cp artifacts/windows-amd64/BMAITools-amd64-installer.exe release-assets/
+          cp artifacts/windows-amd64/BMAITools.exe release-assets/
           ls -lh release-assets/
 
       - name: Create Release
@@ -197,11 +196,11 @@ jobs:
 
             ## 📦 安装说明
 
-            - **Windows**：下载 `CodeSwitch-amd64-installer.exe` 运行安装，或下载 `CodeSwitch.exe` 直接运行
-            - **macOS (Apple Silicon)**：下载 `codeswitch-macos-arm64.zip`，解压后拖入 Applications 文件夹
-            - **macOS (Intel)**：下载 `codeswitch-macos-amd64.zip`，解压后拖入 Applications 文件夹
+            - **Windows**：下载 `BMAITools-amd64-installer.exe` 运行安装，或下载 `BMAITools.exe` 直接运行
+            - **macOS (Apple Silicon)**：下载 `BMAITools-macos-arm64.zip`，解压后拖入 Applications 文件夹
+            - **macOS (Intel)**：下载 `BMAITools-macos-amd64.zip`，解压后拖入 Applications 文件夹
 
-            **完整更新日志**: https://github.com/Rogers-F/code-switch-R/compare/v0.2.4...v0.2.6
+            **完整更新日志**: https://github.com/bayma888/bmai-tools/compare/${{ github.ref_name }}...main
           draft: false
           prerelease: false
         env:

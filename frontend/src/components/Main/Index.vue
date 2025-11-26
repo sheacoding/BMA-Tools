@@ -629,8 +629,8 @@ const resolvedTheme = computed(() => {
   return themeMode.value
 })
 const themeIcon = computed(() => (resolvedTheme.value === 'dark' ? 'moon' : 'sun'))
-const releasePageUrl = 'https://github.com/daodao97/code-switch/releases'
-const releaseApiUrl = 'https://api.github.com/repos/daodao97/code-switch/releases/latest'
+const releasePageUrl = 'https://github.com/bayma888/bmai-tools/releases'
+const releaseApiUrl = 'https://api.github.com/repos/bayma888/bmai-tools/releases/latest'
 
 const HEATMAP_DAYS = DEFAULT_HEATMAP_DAYS
 const usageHeatmap = ref<UsageHeatmapWeek[]>(generateFallbackUsageHeatmap(HEATMAP_DAYS))

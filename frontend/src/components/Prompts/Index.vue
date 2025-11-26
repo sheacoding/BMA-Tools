@@ -289,6 +289,7 @@ onMounted(() => {
 <style scoped>
 .prompts-page {
   padding: 24px;
+  padding-top: 48px; /* 为 macOS 标题栏留出空间 */
   max-width: 900px;
   margin: 0 auto;
 }
@@ -321,7 +322,7 @@ onMounted(() => {
 
 .platform-tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 20px;
   padding: 4px;
   background: var(--mac-surface);
@@ -340,6 +341,11 @@ onMounted(() => {
   color: var(--mac-text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .platform-tab:hover {

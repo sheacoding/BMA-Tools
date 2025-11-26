@@ -130,8 +130,8 @@ func main() {
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
 	app := application.New(application.Options{
-		Name:        "AI Code Studio",
-		Description: "Claude Code and Codex provier manager",
+		Name:        "BMAI Tools",
+		Description: "AI provider manager for Claude Code, Codex and Gemini CLI",
 		Services: []application.Service{
 			application.NewService(appservice),
 			application.NewService(suiService),
@@ -172,7 +172,7 @@ func main() {
 	// 'BackgroundColour' is the background colour of the window.
 	// 'URL' is the URL that will be loaded into the webview.
 	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:     "Code Switch",
+		Title:     "BMAI Tools",
 		Width:     1024,
 		Height:    800,
 		MinWidth:  600,
@@ -235,7 +235,7 @@ func main() {
 
 	systray := app.SystemTray.New()
 	// systray.SetLabel("AI Code Studio")
-	systray.SetTooltip("AI Code Studio")
+	systray.SetTooltip("BMAI Tools")
 	if lightIcon := loadTrayIcon("assets/icon.png"); len(lightIcon) > 0 {
 		systray.SetIcon(lightIcon)
 	}

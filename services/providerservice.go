@@ -123,6 +123,24 @@ func (ps *ProviderService) SaveProviders(kind string, providers []Provider) erro
 	return os.Rename(tmp, path)
 }
 
+// getDefaultProviders 返回默认供应商列表
+func getDefaultProviders() []Provider {
+	return []Provider{
+		{
+			ID:      1,
+			Name:    "BMAI",
+			APIURL:  "https://claude.kun8.vip/v1",
+			APIKey:  "",
+			Site:    "https://claude.kun8.vip/",
+			Icon:    "anthropic",
+			Tint:    "#D97757",
+			Accent:  "#D97757",
+			Enabled: true,
+			Level:   1,
+		},
+	}
+}
+
 func (ps *ProviderService) LoadProviders(kind string) ([]Provider, error) {
 	path, err := providerFilePath(kind)
 	if err != nil {
@@ -132,19 +150,27 @@ func (ps *ProviderService) LoadProviders(kind string) ([]Provider, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			// 文件不存在时返回默认供应商
+			return getDefaultProviders(), nil
 		}
 		return nil, err
 	}
 
 	var envelope providerEnvelope
 	if len(data) == 0 {
-		return []Provider{}, nil
+		// 空文件时返回默认供应商
+		return getDefaultProviders(), nil
 	}
 
 	if err := json.Unmarshal(data, &envelope); err != nil {
 		return nil, err
 	}
+
+	// 如果配置为空，返回默认供应商
+	if len(envelope.Providers) == 0 {
+		return getDefaultProviders(), nil
+	}
+
 	return envelope.Providers, nil
 }
 
@@ -221,7 +247,7 @@ func (ps *ProviderService) DuplicateProvider(kind string, sourceID int64) (*Prov
 
 // IsModelSupported 检查 provider 是否支持指定的模型
 // 支持条件：1) 模型在 SupportedModels 中（精确或通配符匹配）
-//          2) 模型在 ModelMapping 的 key 中（精确或通配符匹配）
+//  2. 模型在 ModelMapping 的 key 中（精确或通配符匹配）
 func (p *Provider) IsModelSupported(modelName string) bool {
 	// 向后兼容：如果未配置白名单和映射，假设支持所有模型
 	if (p.SupportedModels == nil || len(p.SupportedModels) == 0) &&
@@ -368,7 +394,8 @@ func matchWildcard(pattern, text string) bool {
 // applyWildcardMapping 应用通配符映射
 // 将 pattern 中的 * 匹配部分替换到 replacement 的 * 位置
 // 示例: pattern="claude-*", replacement="anthropic/claude-*", input="claude-sonnet-4"
-//      输出: "anthropic/claude-sonnet-4"
+//
+//	输出: "anthropic/claude-sonnet-4"
 func applyWildcardMapping(pattern, replacement, input string) string {
 	// 如果 pattern 或 replacement 没有通配符，直接返回 replacement
 	if !strings.Contains(pattern, "*") || !strings.Contains(replacement, "*") {

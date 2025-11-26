@@ -82,7 +82,7 @@ const navigate = (path: string) => {
 <template>
   <nav class="mac-sidebar" :class="{ collapsed: isCollapsed }">
     <div class="sidebar-header">
-      <span class="sidebar-title" v-if="!isCollapsed">Code Switch</span>
+      <span class="sidebar-title" v-if="!isCollapsed">BMAI Tools</span>
       <button class="collapse-btn" @click="toggleCollapse" :title="isCollapsed ? 'Expand' : 'Collapse'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline v-if="isCollapsed" points="9 18 15 12 9 6"></polyline>
@@ -183,6 +183,7 @@ const navigate = (path: string) => {
 
 .sidebar-header {
   padding: 20px 16px 16px;
+  padding-top: 52px; /* 为 macOS 窗口控制按钮留出空间 */
   border-bottom: 1px solid var(--mac-border);
   display: flex;
   align-items: center;
@@ -192,6 +193,7 @@ const navigate = (path: string) => {
 
 .mac-sidebar.collapsed .sidebar-header {
   padding: 16px 8px;
+  padding-top: 52px; /* 为 macOS 窗口控制按钮留出空间 */
   justify-content: center;
 }
 

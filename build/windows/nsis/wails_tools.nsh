@@ -5,19 +5,19 @@
 !include "FileFunc.nsh"
 
 !ifndef INFO_PROJECTNAME
-    !define INFO_PROJECTNAME "CodeSwitch"
+    !define INFO_PROJECTNAME "BMAITools"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "Code Switch"
+    !define INFO_COMPANYNAME "BMAI Tools"
 !endif
 !ifndef INFO_PRODUCTNAME
-    !define INFO_PRODUCTNAME "Code Switch"
+    !define INFO_PRODUCTNAME "BMAI Tools"
 !endif
 !ifndef INFO_PRODUCTVERSION
     !define INFO_PRODUCTVERSION "0.1.0"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "(c) 2025, Code Switch"
+    !define INFO_COPYRIGHT "(c) 2025, BMAI Tools"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

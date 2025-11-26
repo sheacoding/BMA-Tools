@@ -4,17 +4,17 @@
         <key>CFBundlePackageType</key>
             <string>APPL</string>
         <key>CFBundleName</key>
-            <string>Code Switch</string>
+            <string>BMAI Tools</string>
         <key>CFBundleExecutable</key>
-            <string>CodeSwitch</string>
+            <string>BMAITools</string>
         <key>CFBundleIdentifier</key>
             <string>com.codeswitch.app</string>
         <key>CFBundleVersion</key>
-            <string>1.0.0</string>
+            <string>0.1.0</string>
         <key>CFBundleGetInfoString</key>
-            <string>Code Switch desktop relay controller</string>
+            <string>BMAI Tools - AI provider manager</string>
         <key>CFBundleShortVersionString</key>
-            <string>1.0.0</string>
+            <string>0.1.0</string>
         <key>CFBundleIconFile</key>
             <string>icons</string>
         <key>LSMinimumSystemVersion</key>
@@ -22,6 +22,6 @@
         <key>NSHighResolutionCapable</key>
             <string>true</string>
         <key>NSHumanReadableCopyright</key>
-            <string>(c) 2025, Code Switch</string>
+            <string>(c) 2025, BMAI Tools</string>
     </dict>
 </plist>

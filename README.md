@@ -17,7 +17,7 @@
 
 ## 下载安装
 
-[最新版本下载](https://github.com/Rogers-F/code-switch-R/releases)
+[最新版本下载](https://github.com/bayma888/bmai-tools/releases)
 
 - **Windows**: 下载 `CodeSwitch-amd64-installer.exe` 运行安装，或下载 `CodeSwitch.exe` 便携版
 - **macOS (Apple Silicon)**: 下载 `codeswitch-macos-arm64.zip`，解压后拖入 Applications

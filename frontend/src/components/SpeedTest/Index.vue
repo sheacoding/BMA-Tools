@@ -17,7 +17,8 @@ interface Endpoint {
 const newUrl = ref('')
 const endpoints = ref<Endpoint[]>([
   { url: 'https://api.anthropic.com', result: null, testing: false },
-  { url: 'https://api.openai.com', result: null, testing: false }
+  { url: 'https://api.openai.com', result: null, testing: false },
+  { url: 'https://claude.kun8.vip/v1', result: null, testing: false }
 ])
 const isTesting = ref(false)
 
