@@ -17,9 +17,6 @@ jobs:
         arch: [arm64, amd64]
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: sheacoding/bmai-tools
-          ref: ${{ github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -71,9 +68,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: sheacoding/bmai-tools
-          ref: ${{ github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -141,9 +135,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: sheacoding/bmai-tools
-          ref: ${{ github.ref }}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -209,7 +200,7 @@ jobs:
             - **macOS (Apple Silicon)**：下载 `BMAITools-macos-arm64.zip`，解压后拖入 Applications 文件夹
             - **macOS (Intel)**：下载 `BMAITools-macos-amd64.zip`，解压后拖入 Applications 文件夹
 
-            **完整更新日志**: https://github.com/bayma888/bmai-tools/compare/${{ github.ref_name }}...main
+            **完整更新日志**: https://github.com/sheacoding/bmai-tools/releases/tag/${{ github.ref_name }}
           draft: false
           prerelease: false
         env:
