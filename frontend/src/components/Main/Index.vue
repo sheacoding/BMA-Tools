@@ -431,7 +431,6 @@
                     type="text"
                     :placeholder="t('components.main.form.placeholders.name')"
                     required
-                    :disabled="Boolean(modalState.editingId)"
                   />
                 </label>
 
