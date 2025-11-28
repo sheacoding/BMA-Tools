@@ -69,7 +69,7 @@ const navItems: NavItem[] = [
   { path: '/speedtest', icon: 'zap', labelKey: 'sidebar.speedtest', isNew: true },
   { path: '/env', icon: 'search', labelKey: 'sidebar.env', isNew: true },
   { path: '/logs', icon: 'bar-chart', labelKey: 'sidebar.logs' },
-  { path: '/console', icon: 'terminal', labelKey: 'sidebar.console' },
+  // { path: '/console', icon: 'terminal', labelKey: 'sidebar.console' },
   { path: '/settings', icon: 'settings', labelKey: 'sidebar.settings' },
 ]
 
@@ -164,9 +164,6 @@ const navigate = (path: string) => {
       </button>
     </div>
 
-    <div class="sidebar-footer" v-if="!isCollapsed">
-      <span class="version">v1.1.14</span>
-    </div>
   </nav>
 </template>
 
@@ -321,16 +318,5 @@ html.dark .nav-item:hover {
 .nav-item.active .new-badge {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
-}
-
-.sidebar-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--mac-border);
-}
-
-.version {
-  font-size: 0.75rem;
-  color: var(--mac-text-secondary);
-  opacity: 0.6;
 }
 </style>

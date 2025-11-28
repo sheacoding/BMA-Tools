@@ -661,8 +661,10 @@ func (s *GeminiService) ProxyStatus() (*GeminiProxyStatus, error) {
 	// 读取 .env 文件
 	envConfig, err := readGeminiEnv()
 	if err != nil {
-		// 文件不存在时返回默认状态
+		// 文件不存在时，自动启用代理
 		if os.IsNotExist(err) {
+			_ = s.EnableProxy()
+			status.Enabled = true
 			return status, nil
 		}
 		return status, err

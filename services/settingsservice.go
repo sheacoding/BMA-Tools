@@ -115,8 +115,8 @@ func (ss *SettingsService) GetBlacklistSettings() (threshold int, duration int, 
 func (ss *SettingsService) IsBlacklistEnabled() bool {
 	db, err := xdb.DB("default")
 	if err != nil {
-		log.Printf("⚠️  获取数据库连接失败: %v，默认启用拉黑", err)
-		return true
+		log.Printf("⚠️  获取数据库连接失败: %v，默认禁用拉黑", err)
+		return false
 	}
 
 	var enabledStr string
@@ -125,8 +125,8 @@ func (ss *SettingsService) IsBlacklistEnabled() bool {
 	`).Scan(&enabledStr)
 
 	if err != nil {
-		log.Printf("⚠️  获取拉黑开关失败: %v，默认启用", err)
-		return true
+		// 未配置时默认禁用，等待用户自行开启
+		return false
 	}
 
 	return enabledStr == "true"

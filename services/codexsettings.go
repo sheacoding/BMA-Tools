@@ -37,6 +37,9 @@ func (css *CodexSettingsService) ProxyStatus() (ClaudeProxyStatus, error) {
 	config, err := css.readConfig()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			// 配置文件不存在时，自动启用代理
+			_ = css.EnableProxy()
+			status.Enabled = true
 			return status, nil
 		}
 		return status, err

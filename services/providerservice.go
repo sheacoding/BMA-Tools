@@ -81,24 +81,10 @@ func (ps *ProviderService) SaveProviders(kind string, providers []Provider) erro
 		return err
 	}
 
-	existingProviders, err := ps.LoadProviders(kind)
-	if err != nil {
-		return err
-	}
-	nameByID := make(map[int64]string, len(existingProviders))
-	for _, p := range existingProviders {
-		nameByID[p.ID] = p.Name
-	}
-
 	// 验证每个 provider 的配置
 	validationErrors := make([]string, 0)
 	for _, p := range providers {
-		// 规则 1：name 不可修改
-		if oldName, ok := nameByID[p.ID]; ok && oldName != p.Name {
-			return fmt.Errorf("provider id %d 的 name 不可修改", p.ID)
-		}
-
-		// 规则 2：验证模型配置
+		// 规则 1：验证模型配置
 		if errs := p.ValidateConfiguration(); len(errs) > 0 {
 			for _, errMsg := range errs {
 				validationErrors = append(validationErrors, fmt.Sprintf("[%s] %s", p.Name, errMsg))
