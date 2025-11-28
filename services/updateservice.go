@@ -81,7 +81,7 @@ func NewUpdateService(currentVersion string) *UpdateService {
 
 	us := &UpdateService{
 		currentVersion:   currentVersion,
-		autoCheckEnabled: true, // 默认开启自动检查
+		autoCheckEnabled: false, // 默认关闭自动检查
 		isPortable:       detectPortableMode(),
 		updateDir:        updateDir,
 		stateFile:        stateFile,
