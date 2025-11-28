@@ -40,7 +40,7 @@ func NewProviderRelayService(providerService *ProviderService, geminiService *Ge
 		{
 			Name:   "default",
 			Driver: "sqlite",
-			DSN:    filepath.Join(home, ".code-switch", "app.db?cache=shared&mode=rwc"),
+			DSN:    filepath.Join(home, ".code-switch", "app.db?cache=shared&mode=rwc&_busy_timeout=10000&_journal_mode=WAL"),
 		},
 	}); err != nil {
 		fmt.Printf("初始化数据库失败: %v\n", err)
@@ -50,6 +50,18 @@ func NewProviderRelayService(providerService *ProviderService, geminiService *Ge
 		}
 		if err := ensureBlacklistTables(); err != nil {
 			fmt.Printf("初始化黑名单表失败: %v\n", err)
+		}
+
+		// 预热连接池：强制建立数据库连接，避免首次写入时失败
+		// 解决问题：首次启动时 xdb 连接池未完全初始化导致写入失败
+		db, err := xdb.DB("default")
+		if err == nil && db != nil {
+			var count int
+			if err := db.QueryRow("SELECT COUNT(*) FROM request_log").Scan(&count); err != nil {
+				fmt.Printf("⚠️  连接池预热查询失败: %v\n", err)
+			} else {
+				fmt.Printf("✅ 数据库连接已预热（request_log 记录数: %d）\n", count)
+			}
 		}
 	}
 
@@ -381,6 +393,14 @@ func (prs *ProviderRelayService) forwardRequest(
 
 	if resp.Error() != nil {
 		return false, resp.Error()
+	}
+
+	// 特殊处理：某些 provider 的非流式请求可能返回状态码 0，但实际上是成功的
+	// 如果状态码为 0 且没有错误，当作成功处理
+	if status == 0 {
+		fmt.Printf("[WARN] Provider %s 返回状态码 0，但无错误，当作成功处理\n", provider.Name)
+		_, copyErr := resp.ToHttpResponseWriter(c.Writer, ReqeustLogHook(c, kind, requestLog))
+		return copyErr == nil, copyErr
 	}
 
 	if status >= http.StatusOK && status < http.StatusMultipleChoices {
